@@ -16,7 +16,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import requests
 import yt_dlp
@@ -165,7 +165,7 @@ def fetch_video_metadata(video_id: str, video_url: str | None = None) -> tuple[d
     raw_date = full_info.get("upload_date")
     if raw_date:
         try:
-            upload_date = datetime.strptime(raw_date, "%Y%m%d").replace(tzinfo=timezone.utc)
+            upload_date = datetime.strptime(raw_date, "%Y%m%d").replace(tzinfo=UTC)
         except ValueError:
             pass
 
@@ -246,7 +246,7 @@ def main() -> None:
         print(f"Repository added: {args.add}")
         return
 
-    executed_at = datetime.now(tz=timezone.utc)
+    executed_at = datetime.now(tz=UTC)
     sources = get_sources()
 
     if not sources:

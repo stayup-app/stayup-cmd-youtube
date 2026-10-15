@@ -3,7 +3,7 @@
 by stayup-api's own test suite. yt-dlp is mocked too."""
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -97,7 +97,7 @@ class TestSaveEntry:
     @patch("latest_videos.requests.request")
     def test_posts_a_single_item_with_version(self, mock_request):
         mock_request.return_value = mock_response({"success": True})
-        executed_at = datetime.now(tz=timezone.utc)
+        executed_at = datetime.now(tz=UTC)
         save_entry(1, "vid123", '{"title": "test"}', None, executed_at)
         method, url = mock_request.call_args[0]
         assert method == "POST"
@@ -112,14 +112,14 @@ class TestSaveEntry:
     @patch("latest_videos.requests.request")
     def test_accepts_a_none_version(self, mock_request):
         mock_request.return_value = mock_response({"success": True})
-        save_entry(1, None, "{}", None, datetime.now(tz=timezone.utc))
+        save_entry(1, None, "{}", None, datetime.now(tz=UTC))
         assert mock_request.call_args.kwargs["json"]["items"][0]["version"] is None
 
     @patch("latest_videos.requests.request")
     def test_serializes_the_video_datetime(self, mock_request):
         mock_request.return_value = mock_response({"success": True})
-        video_date = datetime(2024, 6, 15, tzinfo=timezone.utc)
-        save_entry(1, "abc", "{}", video_date, datetime.now(tz=timezone.utc))
+        video_date = datetime(2024, 6, 15, tzinfo=UTC)
+        save_entry(1, "abc", "{}", video_date, datetime.now(tz=UTC))
         item = mock_request.call_args.kwargs["json"]["items"][0]
         assert item["datetime"] == video_date.isoformat()
 
@@ -129,7 +129,7 @@ class TestSaveError:
     @patch("latest_videos.requests.request")
     def test_posts_the_error(self, mock_request):
         mock_request.return_value = mock_response({"success": True})
-        executed_at = datetime.now(tz=timezone.utc)
+        executed_at = datetime.now(tz=UTC)
         save_error(5, "something went wrong", executed_at)
         body = mock_request.call_args.kwargs["json"]
         assert body == {"repositoryId": 5, "error": "something went wrong", "executedAt": executed_at.isoformat()}
@@ -137,7 +137,7 @@ class TestSaveError:
     @patch("latest_videos.requests.request")
     def test_accepts_none_repository_id(self, mock_request):
         mock_request.return_value = mock_response({"success": True})
-        save_error(None, "error", datetime.now(tz=timezone.utc))
+        save_error(None, "error", datetime.now(tz=UTC))
         assert mock_request.call_args.kwargs["json"]["repositoryId"] is None
 
 
@@ -216,7 +216,7 @@ class TestFetchVideoMetadata:
         mock_ydl_cls.return_value.__exit__ = MagicMock(return_value=False)
         mock_ydl.extract_info.return_value = {"upload_date": "20240615", "description": None}
         upload_date, summary = fetch_video_metadata("xyz")
-        assert upload_date == datetime(2024, 6, 15, tzinfo=timezone.utc)
+        assert upload_date == datetime(2024, 6, 15, tzinfo=UTC)
         assert summary is None
 
     @patch("latest_videos.yt_dlp.YoutubeDL")
@@ -236,7 +236,7 @@ class TestFetchVideoMetadata:
         mock_ydl_cls.return_value.__exit__ = MagicMock(return_value=False)
         mock_ydl.extract_info.return_value = {"upload_date": "20240615", "description": "A great video"}
         upload_date, summary = fetch_video_metadata("xyz")
-        assert upload_date == datetime(2024, 6, 15, tzinfo=timezone.utc)
+        assert upload_date == datetime(2024, 6, 15, tzinfo=UTC)
         assert summary == "A great video"
 
 
@@ -258,9 +258,9 @@ class TestProcessRepository:
     @patch("latest_videos.fetch_video_ids")
     def test_first_run_stores_only_latest(self, mock_ids, mock_meta, mock_get_latest, mock_save, mock_save_error):
         mock_ids.return_value = [make_entry("dQw4w9WgXcQ", "Never Gonna Give You Up")]
-        mock_meta.return_value = (datetime(2009, 2, 25, tzinfo=timezone.utc), None)
+        mock_meta.return_value = (datetime(2009, 2, 25, tzinfo=UTC), None)
         mock_get_latest.return_value = None
-        executed_at = datetime.now(tz=timezone.utc)
+        executed_at = datetime.now(tz=UTC)
         process_repository(1, "https://www.youtube.com/@rick", executed_at, {})
 
         mock_save.assert_called_once()
@@ -278,7 +278,7 @@ class TestProcessRepository:
         mock_ids.return_value = [make_entry("vid001", "My Video")]
         mock_meta.return_value = (None, None)
         mock_get_latest.return_value = "vid001"
-        process_repository(1, "https://www.youtube.com/@channel", datetime.now(tz=timezone.utc), {})
+        process_repository(1, "https://www.youtube.com/@channel", datetime.now(tz=UTC), {})
         mock_save.assert_not_called()
 
     @patch("latest_videos.save_error")
@@ -295,7 +295,7 @@ class TestProcessRepository:
         ]
         mock_meta.return_value = (None, None)
         mock_get_latest.return_value = "vid001"
-        process_repository(1, "https://www.youtube.com/@channel", datetime.now(tz=timezone.utc), {})
+        process_repository(1, "https://www.youtube.com/@channel", datetime.now(tz=UTC), {})
 
         saved_versions = [call.args[1] for call in mock_save.call_args_list]
         assert saved_versions == ["vid004", "vid003", "vid002"]
@@ -304,7 +304,7 @@ class TestProcessRepository:
     @patch("latest_videos.fetch_video_ids")
     def test_logs_error_on_failure(self, mock_ids, mock_save_error):
         mock_ids.side_effect = Exception("yt-dlp network error")
-        executed_at = datetime.now(tz=timezone.utc)
+        executed_at = datetime.now(tz=UTC)
         process_repository(1, "https://www.youtube.com/@channel", executed_at, {})
         mock_save_error.assert_called_once_with(1, "yt-dlp network error", executed_at)
 
@@ -312,5 +312,5 @@ class TestProcessRepository:
     @patch("latest_videos.fetch_video_ids")
     def test_logs_error_when_no_video(self, mock_ids, mock_save_error):
         mock_ids.return_value = []
-        process_repository(1, "https://www.youtube.com/@empty", datetime.now(tz=timezone.utc), {})
+        process_repository(1, "https://www.youtube.com/@empty", datetime.now(tz=UTC), {})
         mock_save_error.assert_called_once()
