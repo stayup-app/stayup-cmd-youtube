@@ -12,7 +12,7 @@ For each tracked channel, the script fetches the most recent videos using yt-dlp
 ## Requirements
 
 - Python 3.13, or [Docker](https://www.docker.com/)
-- A `stayup-api` instance (the public one, or your own — see [self-hosting-and-providers.md](https://github.com/stayup-app/stayup-api/blob/main/docs/self-hosting-and-providers.md))
+- A `stayup-api` instance (see [stayup-api](https://github.com/stayup-app/stayup-api))
 - An API key for the `youtube` provider, created from that instance's admin panel (Connector keys → New key, provider `youtube`). The key is shown once — copy it right away.
 
 ## Setup

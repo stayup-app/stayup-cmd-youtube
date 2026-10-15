@@ -9,7 +9,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from latest_videos import (
-    DISPLAY_TEMPLATE,
     add_source,
     fetch_video_ids,
     fetch_video_metadata,
@@ -38,7 +37,7 @@ def mock_response(json_body=None, status=200):
 @patch("latest_videos.API_KEY", "test-key")
 class TestRegisterProvider:
     @patch("latest_videos.requests.request")
-    def test_posts_display_name_sort_order_and_template(self, mock_request):
+    def test_posts_display_name_and_sort_order(self, mock_request):
         mock_request.return_value = mock_response()
         register_provider()
         method, url = mock_request.call_args[0]
@@ -47,7 +46,6 @@ class TestRegisterProvider:
         body = mock_request.call_args.kwargs["json"]
         assert body["displayName"] == "YouTube"
         assert body["sortOrder"] == 20
-        assert body["template"] == DISPLAY_TEMPLATE
 
 
 class TestApiRequestWithoutKey:
@@ -141,23 +139,6 @@ class TestSaveError:
         mock_request.return_value = mock_response({"success": True})
         save_error(None, "error", datetime.now(tz=timezone.utc))
         assert mock_request.call_args.kwargs["json"]["repositoryId"] is None
-
-
-class TestDisplayTemplate:
-    def test_round_trips_through_json_unchanged(self):
-        assert json.loads(json.dumps(DISPLAY_TEMPLATE)) == DISPLAY_TEMPLATE
-
-    def test_ships_a_self_describing_icon(self):
-        icon = DISPLAY_TEMPLATE["display"]["icon"]
-        assert isinstance(icon, dict)
-        assert icon["paths"]
-        assert all(p[:1] in ("M", "m") for p in icon["paths"])
-        assert icon["viewBox"] == "0 0 24 24"
-
-    def test_media_detail_with_reconstructed_embed_url(self):
-        assert DISPLAY_TEMPLATE["detail"]["mode"] == "media"
-        assert DISPLAY_TEMPLATE["detail"]["embedUrl"].endswith("/embed/{$row.version}")
-        assert DISPLAY_TEMPLATE["list"]["layout"] == "media"
 
 
 # ---------------------------------------------------------------------------

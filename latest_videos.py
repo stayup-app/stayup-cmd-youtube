@@ -37,69 +37,6 @@ API_KEY = os.environ.get("STAYUP_API_KEY")
 
 DEFAULT_MAX_ITERATIONS = 5
 
-# Display manifest: how the 3 apps (ui / desktop / mobile) render this
-# connector's rows, without a line of code on the app side. stayup-api relays it
-# as-is from provider_registry.template, without ever interpreting it.
-# Schema: see stayup-api/docs/self-hosting-and-providers.md.
-#
-# One entry = a video. `content` is JSON {title, thumbnail, url}, `url` being
-# the channel URL; `version` is the video id, hence the embed URL rebuilt in
-# `detail.embedUrl`.
-DISPLAY_TEMPLATE = {
-    "version": 1,
-    "display": {
-        "name": DISPLAY_NAME,
-        # Self-describing icon (tintable SVG path). Screen + play button.
-        "icon": {
-            "paths": [
-                "M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
-                "m10 9 5 3-5 3z",
-            ],
-            "viewBox": "0 0 24 24",
-            "stroke": True,
-        },
-        "accent": "#e8a8b5",
-        "sortOrder": SORT_ORDER,
-        "feedLabel": {"path": "$source.url", "format": "urlSlug"},
-    },
-    "item": {
-        "parseContentAsJson": True,
-        "fields": {
-            "title": "title",
-            "subtitle": {"path": "url", "format": "urlSlug"},
-            "image": "thumbnail",
-            "url": ["link", "url"],
-            "timestamp": "$row.datetime",
-        },
-    },
-    "list": {
-        "layout": "media",
-        "primary": "title",
-        "secondary": "subtitle",
-        "meta": "timestamp",
-        "thumbnail": "image",
-    },
-    "detail": {
-        "mode": "media",
-        "title": "title",
-        "subtitle": {"path": "url", "format": "urlSlug"},
-        "image": "thumbnail",
-        "embedUrl": "https://www.youtube-nocookie.com/embed/{$row.version}",
-        "openUrl": ["link", "url"],
-        "openLabel": "Watch on YouTube",
-    },
-    "form": {
-        "label": "YouTube channel (@handle or URL)",
-        "placeholder": "@fireship",
-        "urlTemplate": "https://www.youtube.com/@{value}",
-        "transform": {
-            "trim": True,
-            "extract": r"youtube\.com/(?:@|channel/|user/)([^/?\s]+)",
-            "stripPrefix": ["@"],
-        },
-    },
-}
-
 
 # ---------------------------------------------------------------------------
 # stayup-api client
@@ -122,14 +59,13 @@ def api_request(method: str, path: str, **kwargs) -> dict | None:
 
 
 def register_provider() -> None:
-    """Self-declaration at startup — display name and display manifest."""
+    """Self-declaration at startup — display name and sort order."""
     api_request(
         "POST",
         "/register",
         json={
             "displayName": DISPLAY_NAME,
             "sortOrder": SORT_ORDER,
-            "template": DISPLAY_TEMPLATE,
         },
     )
 
